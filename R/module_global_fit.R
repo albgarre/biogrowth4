@@ -723,7 +723,7 @@ module_global_fit_server <- function(id) {
                 fluidRow(
                     column(6,  # Text file 
                            # h3("Download as text"),
-                           downloadBttn(NS(id, "download_sim_text"), "Download as text",
+                           downloadBttn(NS(id, "download_sim_text"), "Download as CSV",
                                         style = "bordered",
                                         color = "primary",
                                         block = TRUE),
