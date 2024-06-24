@@ -6,7 +6,10 @@ library(tidyverse)
 
 library(FME)
 library(biogrowth)
+
 library(plotly)
+library(DT)
+library(shinyWidgets)
 
 ## ui --------------------------------------------------------------------------
 
@@ -61,9 +64,21 @@ module_twofold_ui <- function(id) {
                     # fluidRow(
                     numericInput(NS(id, "dil_filter"), "Max. dil", 6, min = 1)
                     # )
+                ),
+                awesomeCheckbox(NS(id, "exclude_cond"), "Exclude conditions?", value = FALSE),
+                conditionalPanel(
+                    ns = NS(id),
+                    condition = "input.exclude_cond",
+                    pickerInput(NS(id, "excluded_conditions"),
+                                label = "",
+                                choices = c("aa", "bb", "ab"),
+                                multiple = TRUE,
+                                options = list(`live-search` = TRUE)
+                                )
                 )
             ),
             bs4TabCard(
+                maximizable  = TRUE,
                 tabPanel(
                     "OD-curves",
                     awesomeCheckbox(NS(id, "separate_cond"), "Separate by condition?", value = FALSE),
@@ -72,9 +87,26 @@ module_twofold_ui <- function(id) {
                 tabPanel(
                     "TTDs", 
                     plotOutput(NS(id, "pre_TTDs"))
+                ),
+                tabPanel(
+                    "Linear approx",
+                    actionButton(NS(id, "go_premodel"), label = "Calculate"),
+                    DTOutput(NS(id, "prelim_TTDS"))
                 )
             )
         ),
+        # fluidRow(
+        #     bs4Card(
+        #         title = "Preliminary results",
+        #         status = "success",
+        #         actionButton(NS(id, "go_premodel"), label = "Calculate"),
+        #         tableOutput(NS(id, "prelim_TTDS"))
+        #     ),
+        #     bs4Card(
+        #         title = "Selection",
+        #         status = "primary"
+        #     )
+        # ),
         fluidRow(
             bs4Card(
                 title = "Model fitting",
@@ -138,16 +170,21 @@ module_twofold_ui <- function(id) {
 
 serial_dilution_method <- function(my_ttds, dil_base = 2, 
                                    start_a = 15, start_mu = .3,
-                                   min_points = 6) {
+                                   min_points = 6
+                                   ) {
+    
+    # browser()
+    
     my_ttds %>%
         mutate(x = log10(dil_base)*dil) %>%
         filter(!is.na(TTD)) %>%
         mutate(n = n(), .by = cond) %>%
         filter(n >= min_points) %>%
-        split(.$cond) %>%
+        split(.$cond) %>% 
         map(.,
             ~   nls(TTD ~ a + x/mu, data = .,
-                    start = list(a = start_a, mu = start_mu)
+                    start = list(a = 100, mu = .1)
+                    # start = list(a = start_a, mu = start_mu)
             )
         )
 }
@@ -226,16 +263,23 @@ module_twofold_server <- function(id) {
 
         od_data <- reactive({
             
+            # browser()
+            
             file <- input$file
             ext <- tools::file_ext(file$datapath)
             
             validate(need(ext == "csv", "Please upload a csv file"))
             
-            d <- read.table(file$datapath,
-                       header = TRUE,
-                       sep = input$sep,
-                       dec = input$dec,
-                       stringsAsFactors = FALSE)
+            d <- read_delim(file$datapath,
+                            delim = input$sep,
+                            locale = locale(decimal_mark = input$dec)
+                            )
+            
+            # d <- read.table(file$datapath,
+            #            header = TRUE,
+            #            sep = input$sep,
+            #            dec = input$dec,
+            #            stringsAsFactors = FALSE)
             
             if (!"t" %in% names(d)) {
                 
@@ -249,7 +293,37 @@ module_twofold_server <- function(id) {
                 
             }
             
+            if (ncol(d) < 2) {
+                
+                showModal(
+                    modalDialog(title = "Error loading the data",
+                                "The data must contain at least 2 columns"
+                    )
+                )
+                
+                safeError("Error loading the data")
+                
+            }
+            
             d
+        })
+        
+        ## Update the pickerInput for conditions when the data is loaded
+        
+        observeEvent(od_data(), {
+
+            validate(need(od_data(), message = ""))
+
+            my_conds <- names(od_data())
+            my_conds <- str_split(my_conds, pattern = "_", n = 2, simplify = TRUE)[,1]
+            my_conds <- my_conds[-1]
+            
+            updatePickerInput(session = session,
+                              "excluded_conditions",
+                              choices = unique(my_conds)
+                              )
+            
+            
         })
         
         ## plotting of the OD data
@@ -359,16 +433,15 @@ module_twofold_server <- function(id) {
             
         })
         
-        ## Model fitting -------------------------------------------------------
-
-        my_ttds <- reactiveVal()
-        my_models <- reactiveVal()
+        ## Preliminary mus
         
-        observeEvent(input$fit_model, {
+        prelim_models <- reactiveVal()
+        
+        observeEvent(input$go_premodel, {
             
             validate(need(od_data(), message = ""))
             
-            ## Calculate ttds
+            # browser()
             
             d <- od_data() 
             
@@ -387,6 +460,74 @@ module_twofold_server <- function(id) {
                 separate(cond, into = c("cond", "dil"), sep = "_") %>%
                 mutate(dil = as.numeric(dil))
             
+            out <- my_ttds %>%
+                filter(!is.na(dil)) %>%
+                split(.$cond) %>%
+                map(.,
+                    ~ lm(TTD ~ dil, data = .)
+                )
+            
+            prelim_models(out)
+            
+        })
+        
+        output$prelim_TTDS <- renderDT({
+            
+            models <- prelim_models()
+            
+            models %>% 
+                map(., ~ coef(.)[["dil"]]) %>% 
+                imap_dfr(., 
+                         ~ tibble(cond = .y, mu = .x)
+                         )
+            
+
+            
+        })
+        
+        ## Model fitting -------------------------------------------------------
+
+        my_ttds <- reactiveVal()
+        my_models <- reactiveVal()
+        
+        observeEvent(input$fit_model, {
+            
+            validate(need(od_data(), message = ""))
+            
+            ## Calculate ttds
+            
+            d <- od_data()
+            
+            # browser()
+            
+            if (input$add_time_filter) {
+                d <- d %>% filter(t > input$time_filter)
+            }
+            
+            if (input$exclude_cond) {
+                
+                out_conds <- input$excluded_conditions
+                
+                if (length(out_conds) > 0) {
+
+                    d <- select(d, -matches(out_conds))
+                        
+                }
+                
+            }
+            
+            my_ttds <-  d %>%
+                pivot_longer(-t, names_to = "cond", values_to = "od") %>%
+                split(.$cond) %>%
+                imap_dfr(.,
+                         ~ tibble(cond = .y,
+                                  TTD = approx(x = .x$od, y = .x$t, xout = input$target_OD)$y
+                         )
+                ) %>%
+                separate(cond, into = c("cond", "dil"), sep = "_") %>%
+                mutate(dil = as.numeric(dil)) %>%
+                filter(!is.na(dil))
+            
             if (input$add_dil_filter) {
                 my_ttds <- my_ttds %>% filter(dil <= input$dil_filter)
             } 
@@ -399,7 +540,8 @@ module_twofold_server <- function(id) {
                 
                 out <- serial_dilution_method(my_ttds, dil_base = input$dil_base, 
                                               start_a = 15, start_mu = .3,
-                                              min_points = input$min_point)
+                                              min_points = input$min_point
+                                              )
                 
             } else if (input$model_type == "serial_lambda") {
                 
