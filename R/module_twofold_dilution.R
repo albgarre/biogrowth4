@@ -80,6 +80,10 @@ module_twofold_ui <- function(id) {
             bs4TabCard(
                 maximizable  = TRUE,
                 tabPanel(
+                    "Conditions",
+                    tableOutput(NS(id, "table_conditions"))
+                ),
+                tabPanel(
                     "OD-curves",
                     awesomeCheckbox(NS(id, "separate_cond"), "Separate by condition?", value = FALSE),
                     plotOutput(NS(id, "cuts_od_curves"))
@@ -337,6 +341,19 @@ module_twofold_server <- function(id) {
                 ggplot() + 
                 geom_line(aes(x = t, y = od, colour = cond)) +
                 theme(legend.position = "none")
+        })
+        
+        ## summary of the conditions
+        
+        output$table_conditions <- renderTable({
+            
+            validate(need(od_data(), message = ""))
+            
+            tibble(x = names(od_data())) %>%
+                separate(x, into = c("Condition", "dil"), sep = "_") %>%
+                summarize(Wells = n(), .by = Condition) %>%
+                filter(Condition != "t")
+            
         })
         
         ## pre-filters
