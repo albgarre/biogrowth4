@@ -25,80 +25,170 @@ module_templates_ui <- function(id) {
         ),
         br(),
         fluidRow(
-          tags$h3("Plate reader XX")  
+            selectInput(NS(id, "reader_selecter"),
+                        label = "OD device",
+                        choices = list(
+                            `Plate reader XX` = "plate_reader",
+                            `Bioscreen C` = "bioscreen"
+                            )
+                        )
         ),
-        fluidRow(
-            bs4Card(
-                title = "Output of the plate reader",
-                status = "primary",
-                footer = downloadLink(NS(id, "plateReader_input_example"), "Download example"),
-                
-                fileInput(NS(id, "file_plate_reader"), "Excel file"),
-                selectInput(NS(id, "sheet_plate_reader"), "Sheet name", choices = c()),
-                # numericInput(NS(id, "plate_reader_skip"), "Skip", 0)
-                textInput(NS(id, "range_plate_reader"), label = "Range", value = "A64:EP162")
-            ),
-            bs4Card(
-                title = "",
-                status = "primary",
-                plotOutput(NS(id, "plot_plateReader"))
-            )
-        ),
-        fluidRow(
-            bs4Card(
-                title = "Data schema",
-                status = "primary",
-                footer = downloadLink(NS(id, "plateReader_template_example"), "Download template"),
-                
-                fileInput(NS(id, "file_template_plate_reader"), "Excel file"),
-                selectInput(NS(id, "sheet_template_plate_reader"), "Sheet name", choices = c())
-            ),
-            bs4Card(
-                title = "Template loaded",
-                status = "primary",
-                tableOutput(NS(id, "schema_plateReader"))
-            )
-        ),
-        fluidRow(
-            bs4Card(
-                title = "Conversion",
-                checkboxInput(NS(id, "convert_units"), "Convert time units?", value = TRUE),
-                conditionalPanel(
-                    ns = NS(id),
-                    condition = "input.convert_units",
-                    selectInput(NS(id, "conversion_factor"),
-                                "",
-                                choices = c(`Seconds to minutes` = 1/60,
-                                               `Seconds to hours` = 1/60/60,
-                                               `Seconds to days` = 1/60/60/24,
-                                               
-                                               `Minutes to seconds` = 60,
-                                               `Minutes to hours` = 1/60,
-                                               `Minutes to days` = 1/60/24,
-                                               
-                                               `Hours to seconds` = 60*60,
-                                               `Hours to minutes` = 60,
-                                               `Hours to days` = 24
-                                               
-                                               ),
-                                selected = 1
-                                )
+        conditionalPanel(  # Plate reader XX -----------------------------------
+            ns = NS(id),
+            condition = "input.reader_selecter == 'plate_reader'",
+            fluidRow(
+                bs4Card(
+                    title = "Output of the plate reader",
+                    status = "primary",
+                    footer = downloadLink(NS(id, "plateReader_input_example"), "Download example"),
+                    
+                    fileInput(NS(id, "file_plate_reader"), "Excel file"),
+                    # numericInput(NS(id, "plate_reader_skip"), "Skip", 0)
+                    textInput(NS(id, "range_plate_reader"), label = "Range", value = "A64:EP162")
                 ),
-                actionButton(NS(id, "make_output_plateReader"), "Convert"),
-                footer = downloadButton(NS(id, "plateReader_output_download"))
+                bs4Card(
+                    title = "",
+                    status = "primary",
+                    plotOutput(NS(id, "plot_plateReader"))
+                )
             ),
-            bs4TabCard(
-                title = "Output preview",
-                tabPanel(
-                    title = "Table view",
-                    DTOutput(NS(id, "preview_table"))
+            fluidRow(
+                bs4Card(
+                    title = "Data schema",
+                    status = "primary",
+                    footer = downloadLink(NS(id, "plateReader_template_example"), "Download template"),
+                    
+                    fileInput(NS(id, "file_template_plate_reader"), "Excel file"),
+                    selectInput(NS(id, "sheet_template_plate_reader"), "Sheet name", choices = c())
                 ),
-                tabPanel(
-                    title = "Plot",
-                    plotOutput(NS(id, "preview_plot"))
+                bs4Card(
+                    title = "Template loaded",
+                    status = "primary",
+                    tableOutput(NS(id, "schema_plateReader"))
+                )
+            ),
+            fluidRow(
+                bs4Card(
+                    title = "Conversion",
+                    checkboxInput(NS(id, "convert_units"), "Convert time units?", value = TRUE),
+                    conditionalPanel(
+                        ns = NS(id),
+                        condition = "input.convert_units",
+                        selectInput(NS(id, "conversion_factor"),
+                                    "",
+                                    choices = c(`Seconds to minutes` = 1/60,
+                                                `Seconds to hours` = 1/60/60,
+                                                `Seconds to days` = 1/60/60/24,
+                                                
+                                                `Minutes to seconds` = 60,
+                                                `Minutes to hours` = 1/60,
+                                                `Minutes to days` = 1/60/24,
+                                                
+                                                `Hours to seconds` = 60*60,
+                                                `Hours to minutes` = 60,
+                                                `Hours to days` = 24
+                                                
+                                    ),
+                                    selected = 1
+                        )
+                    ),
+                    actionButton(NS(id, "make_output_plateReader"), "Convert"),
+                    footer = downloadButton(NS(id, "plateReader_output_download"))
+                ),
+                bs4TabCard(
+                    title = "Output preview",
+                    tabPanel(
+                        title = "Table view",
+                        DTOutput(NS(id, "preview_table"))
+                    ),
+                    tabPanel(
+                        title = "Plot",
+                        plotOutput(NS(id, "preview_plot"))
+                    )
                 )
             )
-        )
+        ),
+        conditionalPanel(  # Bioscreen C ---------------------------------------
+            ns = NS(id),
+            condition = "input.reader_selecter == 'bioscreen'",
+            fluidRow(
+                bs4Card(
+                    title = "Output of the bioscreen",
+                    status = "primary",
+                    footer = downloadLink(NS(id, "bioscreen_input_example"), "Download example"),
+                    
+                    fileInput(NS(id, "file_bioscreen"), "Excel file"),
+                    radioButtons(NS(id, "sep_bioscreen"), "Separator",
+                                 c(Comma = ",", Semicolon = ";", Tab = "\t"), ","),
+                    radioButtons(NS(id, "dec_bioscreen"), "Decimal Point",
+                                 c(Point = ".", Comma = ","), ".")
+                ),
+                bs4Card(
+                    title = "",
+                    status = "primary",
+                    plotOutput(NS(id, "plot_bioscreen"))
+                )
+            ),
+            fluidRow(
+                bs4Card(
+                    title = "Data schema",
+                    status = "primary",
+                    footer = downloadLink(NS(id, "bioscreen_template_example"), "Download template"),
+
+                    fileInput(NS(id, "file_template_bioscreen"), "Excel file"),
+                    selectInput(NS(id, "sheet_template_bioscreen"), "Sheet name", choices = c())
+                ),
+                bs4Card(
+                    title = "Template loaded",
+                    status = "primary",
+                    tableOutput(NS(id, "schema_bioscreen"))
+                )
+            ),
+            
+            fluidRow(
+                bs4Card(
+                    title = "Conversion",
+                    checkboxInput(NS(id, "bioscreen_convert_units"), "Convert time units?", value = TRUE),
+                    conditionalPanel(
+                        ns = NS(id),
+                        condition = "input.bioscreen_convert_units",
+                        selectInput(NS(id, "bioscreen_conversion_factor"),
+                                    "",
+                                    choices = c(`Seconds to minutes` = 1/60,
+                                                `Seconds to hours` = 1/60/60,
+                                                `Seconds to days` = 1/60/60/24,
+                                                
+                                                `Minutes to seconds` = 60,
+                                                `Minutes to hours` = 1/60,
+                                                `Minutes to days` = 1/60/24,
+                                                
+                                                `Hours to seconds` = 60*60,
+                                                `Hours to minutes` = 60,
+                                                `Hours to days` = 24
+                                                
+                                    ),
+                                    selected = 2
+                        )
+                    ),
+                    actionButton(NS(id, "make_output_bioscreen"), "Convert"),
+                    footer = downloadButton(NS(id, "bioscreen_output_download"))
+                ),
+                bs4TabCard(
+                    title = "Output preview",
+                    tabPanel(
+                        title = "Table view",
+                        DTOutput(NS(id, "preview_table_bioscreen"))
+                    ),
+                    tabPanel(
+                        title = "Plot",
+                        plotOutput(NS(id, "preview_plot_bioscreen"))
+                    )
+                )
+            )
+            
+            
+            )
+
         
     )
     
@@ -369,6 +459,208 @@ module_templates_server <- function(id) {
                 validate(need(converted_data(), message = ""))
                 
                 write_tsv(converted_data(), file = file)
+            }
+        )
+        
+        ## Bioscreen -----------------------------------------------------------
+        
+        ### Example template
+        
+        output$bioscreen_template_example <- downloadHandler(
+            filename = function() {
+                "template_bioscreen.xlsx"
+            },
+            content = function(file) {
+                file.copy("template_bioscreen.xlsx", file)
+            }
+        )
+        
+        ### Example input
+        
+        output$bioscreen_input_example <- downloadHandler(
+            filename = function() {
+                "input_bioscreen.xlsx"
+            },
+            content = function(file) {
+                file.copy("input_bioscreen.xlsx", file)
+            }
+        )
+        
+        ## Bioscreen input --------------------------------------------------
+        
+        bioscreenFile <- reactive({
+            input$file_bioscreen
+        })
+        
+        bioscreen_data <- reactive({
+            
+            validate(need(bioscreenFile(), message = ""))
+            
+            ## Read the input file
+            
+            d <- read.table(file = bioscreenFile()$datapath, 
+                            sep = input$sep_bioscreen, 
+                            dec = input$dec_bioscreen,
+                            header = TRUE
+                            )
+            
+            ## Convert the time
+
+            out <- d %>%
+                separate(Time, into = c("h", "m", "s"), sep = ":") %>%
+                mutate(t = as.numeric(h) + as.numeric(m)/60 + as.numeric(s)/60/60) %>%
+                select(t, everything(), -h, -m, -s)
+
+            out
+            
+        })
+        
+        output$plot_bioscreen <- renderPlot({
+            
+            validate(need(bioscreen_data(), message = ""))
+            
+            bioscreen_data() %>%
+                pivot_longer(-t, names_to = "well") %>%
+                ggplot(aes(x = t, y = value, colour = well)) +
+                geom_line() +
+                ylab("OD") +
+                theme(legend.position = "none")
+            
+        })
+        
+        ## Bioscreen template --------------------------------------------------
+        
+        bioscreenTemplateFile <- reactive({
+            input$file_template_bioscreen
+        })
+        
+        observeEvent(bioscreenTemplateFile(), {  # Update the choices
+            
+            validate(need(bioscreenTemplateFile(), message = ""))
+            
+            updateSelectInput(session = session,
+                              inputId = "sheet_template_bioscreen",
+                              choices = excel_sheets(bioscreenTemplateFile()$datapath)
+            )
+            
+        })
+        
+        bioscreen_template <- reactive({
+            
+            validate(need(bioscreenTemplateFile(), message = ""))
+            
+            ## Read the template
+            
+            read_excel(bioscreenTemplateFile()$datapath, 
+                       sheet = input$sheet_template_bioscreen
+                       ) %>%
+                set_names(c("condition", "plate", "first", "direction", "last"))
+            
+        })
+        
+        output$schema_bioscreen <- renderTable({
+            
+            bioscreen_template()
+            
+        })
+        
+        ## Reactive for saving the converted data  -----------------------------
+        
+        converted_data_bioscreen <- reactiveVal()
+        
+        ## Convert the template ------------------------------------------------
+        
+        observeEvent(input$make_output_bioscreen, {
+            
+            validate(need(bioscreenTemplateFile(), message = ""))
+            validate(need(bioscreenFile(), message = ""))
+            
+            ## Get the reactives for easy access
+            
+            d <- bioscreen_data()
+            t <- bioscreen_template()
+            
+            ## Loop through each rough of the template
+            
+            legend <- lapply(1:nrow(t), function(i) {
+                
+                this_data <- t[i,]
+                
+                x <- seq(this_data$first, this_data$last, by = this_data$direction)
+                
+                tibble(
+                    column = x + this_data$plate*100,
+                ) %>%
+                    mutate(
+                        column = paste0("Well.", column),
+                        new_col = paste0(this_data$condition, "_", row_number()-1)
+                    )
+                
+                
+                
+            }) %>%
+                bind_rows() %>%
+                select(column, new_col)
+            
+            ## Take only columns that appear in the map
+            
+            d_renamed <- d %>%
+                select(t, matches(legend$column))
+            
+            ## Change the column names according to the legend
+            
+            d_renamed <- tibble(column = names(d_renamed)) %>%
+                left_join(legend) %>%
+                mutate(new_col = ifelse(column == "t", "t", new_col)) %>%  # the time is not in template
+                pull(new_col) %>%
+                set_names(d_renamed, .)
+            
+            ## Check if we need to convert units
+            
+            if (input$bioscreen_convert_units) {
+                
+                d_renamed <- d_renamed %>%
+                    mutate(t = t * as.numeric(input$bioscreen_conversion_factor))
+            }
+            
+            ## Update the reactive
+            
+            converted_data_bioscreen(d_renamed)
+            
+        })
+        
+        ## Preview of the output
+        
+        output$preview_table_bioscreen <- renderDT({
+            
+            validate(need(converted_data_bioscreen(), message = ""))
+            
+            converted_data_bioscreen()
+            
+        })
+        
+        output$preview_plot_bioscreen <- renderPlot({
+            
+            validate(need(converted_data_bioscreen(), message = ""))
+            
+            converted_data_bioscreen() %>%
+                pivot_longer(-t, names_to = "well") %>%
+                ggplot() + 
+                geom_line(aes(x = t, y = value, colour = well))
+            
+        })
+        
+        ## Downloading the file
+        
+        output$bioscreen_output_download <- downloadHandler(
+            filename = function() {
+                paste0("data_for_od_analysis", ".csv")
+            },
+            content = function(file) {
+                
+                validate(need(converted_data_bioscreen(), message = ""))
+                
+                write_tsv(converted_data_bioscreen(), file = file)
             }
         )
         
