@@ -109,6 +109,12 @@ ui <- bs4DashPage(
                 "Serial dilution method",
                 tabName = "two_fold",
                 icon = icon("arrows-turn-to-dots")
+            ),
+            menuItem(
+                "OD-data converter",
+                tabName = "templates",
+                icon = icon("home")
+                
             )
         ),
         
@@ -200,6 +206,10 @@ ui <- bs4DashPage(
             tabItem(
                 tabName = "two_fold",
                 module_twofold_ui("module_twofold_dilution")
+            ),
+            tabItem(
+                tabName = "templates",
+                module_templates_ui("module_templates")
             ),
             tabItem(
                 tabName = "welcome_tab",

@@ -16,5 +16,6 @@ server <- function(input, output, session) {
   module_other_server("module_other")
   module_twofold_server("module_twofold_dilution")
   module_about_server("module_about")
+  module_templates_server("module_templates")
 
 }
