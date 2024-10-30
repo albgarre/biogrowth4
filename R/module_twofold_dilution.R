@@ -112,7 +112,7 @@ module_twofold_ui <- function(id) {
                 title = "Model fitting",
                 status = "primary",
                 footer = tagList(
-                    numericInput(NS(id, "min_point"), "Minimum number of TTDs", 6, min = 2),
+                    numericInput(NS(id, "min_point"), "Minimum number of TTDs", 4, min = 3),
                     actionButton(NS(id, "fit_model"), "Fit model",
                                  outline = TRUE, flat = FALSE,
                                  status = "primary"
@@ -183,14 +183,14 @@ serial_dilution_method <- function(my_ttds, dil_base = 2,
         split(.$cond) %>% 
         map(.,
             ~   nls(TTD ~ a + x/mu, data = .,
-                    start = list(a = 100, mu = .1)
-                    # start = list(a = start_a, mu = start_mu)
+                    start = list(a = start_a, mu = start_mu)
             )
         )
 }
 
-serial_dilution_method_lambda <- function(my_ttds, dil_base = 2, start_lambda = 15, start_mu = .3, 
-                              log_Ndet = 2.5, logC = 4, min_points = 6) {
+serial_dilution_method_lambda <- function(my_ttds, dil_base = 2, 
+                                          start_lambda = 15, start_mu = 1e-3, 
+                                          log_Ndet = 2.5, logC = 4, min_points = 6) {
     my_ttds %>%
         mutate(x = log10(dil_base)*dil) %>%
         filter(!is.na(TTD)) %>%
@@ -494,6 +494,8 @@ module_twofold_server <- function(id) {
             
             validate(need(od_data(), message = ""))
             
+            # browser()
+            
             ## Calculate ttds
             
             d <- od_data()
@@ -539,14 +541,14 @@ module_twofold_server <- function(id) {
             if (input$model_type == "serial") {
                 
                 out <- serial_dilution_method(my_ttds, dil_base = input$dil_base, 
-                                              start_a = 15, start_mu = .3,
+                                              start_a = 100, start_mu = 1e-3,
                                               min_points = input$min_point
                                               )
                 
             } else if (input$model_type == "serial_lambda") {
                 
                 out <- serial_dilution_method_lambda(my_ttds, dil_base = input$dil_base, 
-                                                     start_lambda = 15, start_mu = .3, 
+                                                     start_lambda = 15, start_mu = 1e-3, 
                                                      log_Ndet = input$target_logN, 
                                                      logC = input$logC,
                                                      min_points = input$min_point)  
