@@ -148,28 +148,33 @@ module_templates_ui <- function(id) {
             fluidRow(
                 bs4Card(
                     title = "Conversion",
-                    checkboxInput(NS(id, "bioscreen_convert_units"), "Convert time units?", value = TRUE),
-                    conditionalPanel(
-                        ns = NS(id),
-                        condition = "input.bioscreen_convert_units",
-                        selectInput(NS(id, "bioscreen_conversion_factor"),
-                                    "",
-                                    choices = c(`Seconds to minutes` = 1/60,
-                                                `Seconds to hours` = 1/60/60,
-                                                `Seconds to days` = 1/60/60/24,
-                                                
-                                                `Minutes to seconds` = 60,
-                                                `Minutes to hours` = 1/60,
-                                                `Minutes to days` = 1/60/24,
-                                                
-                                                `Hours to seconds` = 60*60,
-                                                `Hours to minutes` = 60,
-                                                `Hours to days` = 24
-                                                
-                                    ),
-                                    selected = 2
-                        )
-                    ),
+                    selectInput(NS(id, "bioscreen_output_unit"),
+                                "Output time unit",
+                                choices = c("seconds", "minutes", "hours", "days"),
+                                selected = "hours"
+                                ),
+                    # checkboxInput(NS(id, "bioscreen_convert_units"), "Convert time units?", value = TRUE),
+                    # conditionalPanel(
+                    #     ns = NS(id),
+                    #     condition = "input.bioscreen_convert_units",
+                    #     selectInput(NS(id, "bioscreen_conversion_factor"),
+                    #                 "",
+                    #                 choices = c(`Seconds to minutes` = 1/60,
+                    #                             `Seconds to hours` = 1/60/60,
+                    #                             `Seconds to days` = 1/60/60/24,
+                    #                             
+                    #                             `Minutes to seconds` = 60,
+                    #                             `Minutes to hours` = 1/60,
+                    #                             `Minutes to days` = 1/60/24,
+                    #                             
+                    #                             `Hours to seconds` = 60*60,
+                    #                             `Hours to minutes` = 60,
+                    #                             `Hours to days` = 24
+                    #                             
+                    #                 ),
+                    #                 selected = 2
+                    #     )
+                    # ),
                     actionButton(NS(id, "make_output_bioscreen"), "Convert"),
                     footer = downloadButton(NS(id, "bioscreen_output_download"))
                 ),
@@ -479,10 +484,10 @@ module_templates_server <- function(id) {
         
         output$bioscreen_input_example <- downloadHandler(
             filename = function() {
-                "input_bioscreen.xlsx"
+                "input_bioscreen.csv"
             },
             content = function(file) {
-                file.copy("input_bioscreen.xlsx", file)
+                file.copy("input_bioscreen.csv", file)
             }
         )
         
@@ -615,14 +620,18 @@ module_templates_server <- function(id) {
                 pull(new_col) %>%
                 set_names(d_renamed, .)
             
-            ## Check if we need to convert units
+            ## Convert the units
             
-            if (input$bioscreen_convert_units) {
-                
-                d_renamed <- d_renamed %>%
-                    mutate(t = t * as.numeric(input$bioscreen_conversion_factor))
-            }
+            conversion_factor <- switch(input$bioscreen_output_unit,
+                                        seconds = 60*60,
+                                        minutes = 60,
+                                        hours = 1,
+                                        days = 1/24
+                                        )
             
+            d_renamed <- d_renamed %>%
+                mutate(t = t * conversion_factor)
+
             ## Update the reactive
             
             converted_data_bioscreen(d_renamed)
