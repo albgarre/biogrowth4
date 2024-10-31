@@ -138,10 +138,21 @@ module_templates_ui <- function(id) {
                     fileInput(NS(id, "file_template_bioscreen"), "Excel file"),
                     selectInput(NS(id, "sheet_template_bioscreen"), "Sheet name", choices = c())
                 ),
-                bs4Card(
+                # bs4Card(
+                #     title = "Template loaded",
+                #     status = "primary",
+                #     tableOutput(NS(id, "schema_bioscreen"))
+                # )
+                bs4TabCard(
                     title = "Template loaded",
-                    status = "primary",
-                    tableOutput(NS(id, "schema_bioscreen"))
+                    tabPanel(
+                        title = "Table",
+                        tableOutput(NS(id, "schema_bioscreen"))
+                    ),
+                    tabPanel(
+                        title = "Plot",
+                        plotOutput(NS(id, "schema_plot_bioscreen"))
+                    )
                 )
             ),
             
@@ -569,6 +580,119 @@ module_templates_server <- function(id) {
             
         })
         
+        ## Plot of the template
+        
+        output$schema_plot_bioscreen <- renderPlot({
+            
+            validate(need(bioscreenTemplateFile(), message = ""))
+            
+            t <- bioscreen_template()
+            
+            plate_width <- 11
+            plate_height <- 12
+            
+            ## Plates
+            
+            p <- ggplot() + 
+                geom_rect(aes(xmin = 0, 
+                              xmax = plate_width,
+                              ymin = 0, 
+                              ymax = plate_height)
+                ) + 
+                geom_rect(aes(xmin = plate_width + 1, 
+                              xmax = plate_width*2 + 1, 
+                              ymin = 0, ymax = plate_height)
+                ) 
+            
+            ## Plate labels
+            
+            p <- p + 
+                geom_label(aes(x = plate_width/2, y = -.5, label = "Plate 1")) +
+                geom_label(aes(x = plate_width/2 + plate_width + 1, y = -.5, label = "Plate 2"))
+            
+            ## Wells
+            
+            well_positions <- expand_grid(x = 0:9, 
+                                          y = 9:0,
+            ) %>%
+                mutate(label = as.character(1:100)) %>%
+                mutate(y = ifelse(x%%2 == 0, y + .5, y),
+                       label = ifelse(str_length(label) == 1, paste0("0", label), label)
+                       # label = ifelse(label == "1", "01", label)
+                )
+            
+            p <- p + 
+                geom_point(aes(x = x + 1, y = y + 1), ## Plate 1
+                           data = well_positions,
+                           size = 5,
+                           colour = "white") +
+                geom_point(aes(x = x + 1 + plate_width + 1, y = y + 1), ## Plate 2
+                           data = well_positions,
+                           size = 5,
+                           colour = "white")
+            
+            ## Well labels
+            
+            label_positions <- tibble(x = 1:10, 
+                                      y = plate_height - .5,
+                                      label = as.character(1+0:9*10)) %>%
+                mutate(label = ifelse(label == "1", "01", label))
+            
+            p <- p + 
+                geom_text(aes(x = x, y = y, label = label),
+                          data = label_positions
+                ) + 
+                geom_text(aes(x = x, y = y, label = label),
+                          data = label_positions %>%
+                              mutate(x = x + plate_width + 1)
+                )
+            
+            ## Add the paths
+            
+            dil_paths <- lapply(1:nrow(t), function(i) {
+                
+                this_data <- t[i,]
+                
+                
+                if (this_data$first > this_data$last) {
+                    
+                    x <- seq(this_data$first, this_data$last, by = -this_data$direction)
+                    
+                } else {
+                    x <- seq(this_data$first, this_data$last, by = this_data$direction)
+                }
+                
+                out <- tibble(label = x
+                              ) %>%
+                    mutate(label = as.character(label)) %>%
+                    mutate(label = ifelse(str_length(label) == 1, paste0("0", label), label)) %>%
+                    left_join(., well_positions)
+                
+                out %>%
+                    mutate(x = x + (this_data$plate - 1)*(plate_width + 1)) %>%
+                    mutate(condition = this_data$condition)
+                
+                
+                
+            }) %>%
+                bind_rows()
+            
+            p <- p +
+                geom_path(aes(x = x + 1, y = y + 1, colour = condition), 
+                          arrow = arrow(length = unit(.1, "inches"), type = "closed"),
+                          data = dil_paths
+                ) +
+                geom_point(aes(x = x + 1, y = y + 1, colour = condition), 
+                           data = dil_paths
+                )
+            
+            
+            
+            ## Output
+            
+            p + theme_void()
+        })
+        
         ## Reactive for saving the converted data  -----------------------------
         
         converted_data_bioscreen <- reactiveVal()
@@ -591,7 +715,15 @@ module_templates_server <- function(id) {
                 
                 this_data <- t[i,]
                 
-                x <- seq(this_data$first, this_data$last, by = this_data$direction)
+                if (this_data$first > this_data$last) {
+                    
+                    x <- seq(this_data$first, this_data$last, by = -this_data$direction)
+                    
+                } else {
+                    x <- seq(this_data$first, this_data$last, by = this_data$direction)
+                }
+                
+                
                 
                 tibble(
                     column = x + this_data$plate*100,
