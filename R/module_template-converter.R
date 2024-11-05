@@ -61,10 +61,18 @@ module_templates_ui <- function(id) {
                     fileInput(NS(id, "file_template_plate_reader"), "Excel file"),
                     selectInput(NS(id, "sheet_template_plate_reader"), "Sheet name", choices = c())
                 ),
-                bs4Card(
+                bs4TabCard(
                     title = "Template loaded",
                     status = "primary",
-                    tableOutput(NS(id, "schema_plateReader"))
+                    tabPanel(
+                        title = "Table view",
+                        tableOutput(NS(id, "schema_plateReader"))
+                    ),
+                    tabPanel(
+                        title = "plot",
+                        plotOutput(NS(id, "schema_plot_plateReader"))
+                    )
+                    
                 )
             ),
             fluidRow(
@@ -346,6 +354,180 @@ module_templates_server <- function(id) {
             
             plateReader_template()
             
+        })
+        
+        ## Plot of the template
+        
+        output$schema_plot_plateReader <- renderPlot({
+            
+            validate(need(plateReader_template(), message = ""))
+            
+            # browser()
+            
+            t <- plateReader_template()
+            
+            plate_width <- 14
+            plate_height <- 10
+            
+            ## Plates
+            
+            p <- ggplot() + 
+                geom_rect(aes(xmin = 0, 
+                              xmax = plate_width,
+                              ymin = 0, 
+                              ymax = plate_height)
+                )
+            
+            ## Wells
+            
+            well_positions <- expand_grid(x = 0:11, 
+                                          y = 7:0) %>%
+                mutate(label = paste0(LETTERS[y+1], x+1))
+            # ) %>%
+            #     mutate(label = as.character(1:100)) %>%
+            #     mutate(y = ifelse(x%%2 == 0, y + .5, y),
+            #            label = ifelse(str_length(label) == 1, paste0("0", label), label)
+            #            # label = ifelse(label == "1", "01", label)
+            #     )
+            
+            p <- p + 
+                geom_point(aes(x = x + 2, y = y + 1),
+                           data = well_positions,
+                           size = 5,
+                           colour = "white")
+            
+            ## Row labels
+            
+            label_positions <- tibble(x = 1, 
+                                      y = 7:0,
+                                      label = LETTERS[1:8])
+            
+            p <- p + 
+                geom_text(aes(x = x, y = y + 1, label = label),
+                          data = label_positions
+                )
+            
+            ## Column labels
+            
+            label_positions <- tibble(y = plate_height - 1, 
+                                      x = 0:11,
+                                      label = 1:12)
+            
+            p <- p + 
+                geom_text(aes(x = x + 2, y = y, label = label),
+                          data = label_positions
+                )
+            
+            ## Get the legend
+            
+            legend <- lapply(1:nrow(t), function(i) {
+                
+                this_data <- t[i,]
+                
+                ## Make a map, assigning an index to each letter and number
+                
+                letter_map <- tibble(l = LETTERS[which(this_data$first_letter == LETTERS):which(this_data$last_letter == LETTERS)]) %>%
+                    mutate(l_index = row_number())
+                
+                number_map <- tibble(n = this_data$first_number:this_data$last_number) %>%
+                    mutate(n_index = row_number())
+                
+                out <- expand.grid(l = letter_map$l, n = number_map$n) %>%
+                    mutate(column = paste0(l, n)) %>%
+                    left_join(letter_map) %>%
+                    left_join(number_map)
+                
+                ## Define the column names
+                
+                if (this_data$direction == "letters") {  # Letters define the number of dilutions
+                    
+                    out <- out %>%
+                        mutate(new_col = paste0(this_data$condition,
+                                                "/R",
+                                                n_index,  # the number is considered as repetition n
+                                                "_",
+                                                l_index - 1  # -1 to account for 0 dilution
+                        )
+                        )
+                    
+                } else if (this_data$direction == "numbers") {
+                    
+                    out <- out %>%
+                        mutate(new_col = paste0(this_data$condition,
+                                                "/R",
+                                                l_index,  # the letter is considered as repetition n
+                                                "_",
+                                                n_index - 1  # -1 to account for 0 dilution
+                        )
+                        )
+                    
+                } else {
+                    stop("Wrong direction. Must be 'letters' or 'numbers'")
+                }
+                
+                out
+            }) %>%
+                bind_rows() %>%
+                select(label = column, cond = new_col) %>%
+                left_join(well_positions) %>%
+                mutate(x = as.numeric(x), y = as.numeric(y)) %>%
+                separate(cond, into = c("cond"), sep = "_")
+            
+            # browser()
+            
+            p <- p + 
+                geom_path(aes(x = x +2 , y = y + 1, colour = cond),
+                          data = legend,
+                          arrow = arrow(length = unit(.1, "inches"), type = "closed")) +
+                geom_point(aes(x = x +2 , y = y + 1, colour = cond),
+                          data = legend
+                          )
+                
+            
+            ## Add the paths
+            
+            # dil_paths <- lapply(1:nrow(t), function(i) {
+            #     
+            #     this_data <- t[i,]
+            #     
+            #     
+            #     if (this_data$first > this_data$last) {
+            #         
+            #         x <- seq(this_data$first, this_data$last, by = -this_data$direction)
+            #         
+            #     } else {
+            #         x <- seq(this_data$first, this_data$last, by = this_data$direction)
+            #     }
+            #     
+            #     out <- tibble(label = x
+            #     ) %>%
+            #         mutate(label = as.character(label)) %>%
+            #         mutate(label = ifelse(str_length(label) == 1, paste0("0", label), label)) %>%
+            #         left_join(., well_positions)
+            #     
+            #     out %>%
+            #         mutate(x = x + (this_data$plate - 1)*(plate_width + 1)) %>%
+            #         mutate(condition = this_data$condition)
+            #     
+            #     
+            #     
+            # }) %>%
+            #     bind_rows()
+            # 
+            # p <- p +
+            #     geom_path(aes(x = x + 1, y = y + 1, colour = condition), 
+            #               arrow = arrow(length = unit(.1, "inches"), type = "closed"),
+            #               data = dil_paths
+            #     ) +
+            #     geom_point(aes(x = x + 1, y = y + 1, colour = condition), 
+            #                data = dil_paths
+            #     )
+            
+            
+            
+            ## Output
+            
+            p + theme_void()
         })
         
         ## Reactive for saving the converted data  -----------------------------
