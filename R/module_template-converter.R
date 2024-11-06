@@ -382,7 +382,7 @@ module_templates_server <- function(id) {
             
             well_positions <- expand_grid(x = 0:11, 
                                           y = 7:0) %>%
-                mutate(label = paste0(LETTERS[y+1], x+1))
+                mutate(label = paste0(LETTERS[(7-y)+1], x+1))
             # ) %>%
             #     mutate(label = as.character(1:100)) %>%
             #     mutate(y = ifelse(x%%2 == 0, y + .5, y),
