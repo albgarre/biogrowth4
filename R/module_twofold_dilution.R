@@ -132,8 +132,11 @@ module_twofold_ui <- function(id) {
                     ns = NS(id),
                     condition = "input.model_type == 'serial_lambda'",
                     # fluidRow(
-                    numericInput(NS(id, "target_logN"), "logN at target OD", 6.2, min = 0, step = .1),
-                    numericInput(NS(id, "logC"), "highest logN0", 4, min = 0, step = .1)
+                    numericInput(NS(id, "logC"), "Concentration at well with dilution 0 (log CFU/mL)", 
+                                 4, min = 0, step = .1),
+                    numericInput(NS(id, "target_logN"), "Concentration at detection OD (log CFU/mL)", 
+                                 6.2, min = 0, step = .1)
+                    
                     # )
                 )
             ),
