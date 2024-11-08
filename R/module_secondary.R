@@ -249,7 +249,7 @@ module_secondary_fit_server <- function(id) {
             Saramago = c("b", "Xmin", "k"),
             `full Saramago` = c("b", "Xmin", "Xmax", "c", "k"),
             Zwietering = c("Xmin", "Xopt", "muopt", "n"),
-            Aryani = c("Xmin", "Xhalf", "Xref", "muopt"),
+            Aryani = c("Xmin", "Xhalf", "muopt"),
             `Rosso aw` = c("Xmin", "muopt"),
             Inhibitor = c("MIC", "alpha", "muopt")
         )
@@ -385,13 +385,9 @@ module_secondary_fit_server <- function(id) {
 
                 p <- as.list(p)
 
-                num <- 1 - 2^( (X - p$Xmin)/(p$Xmin - p$Xhalf) )
-                den <- 1 - 2^( (X - p$Xref)/(p$Xhalf - p$Xmin) )
-                
-                gamma <- num/den
-                
+                gamma <- 1 - 2^( (X - p$Xmin)/(p$Xmin - p$Xhalf) )
+
                 gamma[X < p$Xmin] <- 0
-                gamma[X > p$Xref] <- 0
                 
                 mu <- gamma*p$muopt
                 mu

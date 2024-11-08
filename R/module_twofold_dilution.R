@@ -416,6 +416,8 @@ module_twofold_server <- function(id) {
             
             validate(need(od_data(), message = ""))
             
+            # browser()
+            
             d <- od_data() 
             
             if (input$add_time_filter) {
