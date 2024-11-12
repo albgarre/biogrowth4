@@ -400,21 +400,38 @@ module_dynamic_fit_server <- function(id) {
                                 "Model type",
                                 secondary_model_data()
                     ),
-                    fluidRow(
-                        column(8,
-                               numericInput(NS(id, paste0(each_name, "_xmin")), "Xmin", 0)
-                               ),
-                        column(4,
-                               awesomeCheckbox(NS(id,
-                                                  paste0(each_name, "_xmin", "_fixed")
-                                                  ),
-                                               "Fixed?", FALSE
-                                               )
-                               )
-                    ),
-                    conditionalPanel(
+                    conditionalPanel(  # xmin
                         ns = NS(id),
-                        condition = paste0("input.", each_name, "_model != 'fullRatkowsky'"),
+                        condition = paste0("input.", each_name, "_model != 'Inhibitory'"),
+                        fluidRow(
+                            column(8,
+                                   numericInput(NS(id, paste0(each_name, "_xmin")), "Xmin", 0)
+                            ),
+                            column(4,
+                                   awesomeCheckbox(NS(id,
+                                                      paste0(each_name, "_xmin", "_fixed")
+                                   ),
+                                   "Fixed?", FALSE
+                                   )
+                            )
+                        )
+                    ),
+                    # fluidRow(
+                    #     column(8,
+                    #            numericInput(NS(id, paste0(each_name, "_xmin")), "Xmin", 0)
+                    #            ),
+                    #     column(4,
+                               # awesomeCheckbox(NS(id,
+                               #                    paste0(each_name, "_xmin", "_fixed")
+                               #                    ),
+                               #                 "Fixed?", FALSE
+                               #                 )
+                               # )
+                    # ),
+                    conditionalPanel(  # xopt
+                        ns = NS(id),
+                        condition = paste0("input.", each_name, "_model == 'CPM'",
+                                           " || ", "input.", each_name, "_model == 'Zwietering'"),
                         fluidRow(
                             column(8,
                                    numericInput(NS(id, paste0(each_name, "_xopt")), "Xopt", 37)
@@ -428,9 +445,10 @@ module_dynamic_fit_server <- function(id) {
                             )
                         )
                     ),
-                    conditionalPanel(
+                    conditionalPanel(  # xmax
                         ns = NS(id),
-                        condition = paste0("input.", each_name, "_model != 'Zwietering'"),
+                        condition = paste0("input.", each_name, "_model == 'CPM'",
+                                           " || ", "input.", each_name, "_model == 'fullRatkowsky'"),
                         fluidRow(
                             column(8,
                                    numericInput(NS(id, paste0(each_name, "_xmax")), "Xmax", 45)
@@ -444,9 +462,10 @@ module_dynamic_fit_server <- function(id) {
                         )
                         
                     ),
-                    conditionalPanel(
+                    conditionalPanel(  # n
                         ns = NS(id),
-                        condition = paste0("input.", each_name, "_model != 'fullRatkowsky'"),
+                        condition = paste0("input.", each_name, "_model == 'CPM'",
+                                           " || ", "input.", each_name, "_model == 'Zwietering'"),
                         fluidRow(
                             column(8,
                                    numericInput(NS(id, paste0(each_name, "_n")), "n", 1)
@@ -459,21 +478,67 @@ module_dynamic_fit_server <- function(id) {
                                    )
                         )
                     ),
-                    conditionalPanel(
+                    conditionalPanel(  # c
                         ns = NS(id),
                         condition = paste0("input.", each_name, "_model == 'fullRatkowsky'"),
                         fluidRow(
                             column(8,
                                    numericInput(NS(id, paste0(each_name, "_c")), "c", 1)
-                                   ),
+                            ),
                             column(4,
                                    awesomeCheckbox(
                                        NS(id, paste0(each_name, "_c", "_fixed")),
                                        "Fixed?", FALSE
                                    )
-                                   )
+                            )
                         )
                     ),
+                    conditionalPanel(  # xhalf
+                        ns = NS(id),
+                        condition = paste0("input.", each_name, "_model == 'Aryani'"),
+                        fluidRow(
+                            column(8,
+                                   numericInput(NS(id, paste0(each_name, "_xhalf")), "xhalf", 1)
+                            ),
+                            column(4,
+                                   awesomeCheckbox(
+                                       NS(id, paste0(each_name, "_xhalf", "_fixed")),
+                                       "Fixed?", FALSE
+                                   )
+                            )
+                        )
+                    ),
+                    conditionalPanel(  # MIC
+                        ns = NS(id),
+                        condition = paste0("input.", each_name, "_model == 'Inhibitory'"),
+                        fluidRow(
+                            column(8,
+                                   numericInput(NS(id, paste0(each_name, "_MIC")), "MIC", 1)
+                            ),
+                            column(4,
+                                   awesomeCheckbox(
+                                       NS(id, paste0(each_name, "_MIC", "_fixed")),
+                                       "Fixed?", FALSE
+                                   )
+                            )
+                        )
+                    ),
+                    conditionalPanel(  # alpha
+                        ns = NS(id),
+                        condition = paste0("input.", each_name, "_model == 'Inhibitory'"),
+                        fluidRow(
+                            column(8,
+                                   numericInput(NS(id, paste0(each_name, "_alpha")), "alpha", 1)
+                            ),
+                            column(4,
+                                   awesomeCheckbox(
+                                       NS(id, paste0(each_name, "_alpha", "_fixed")),
+                                       "Fixed?", FALSE
+                                   )
+                            )
+                        )
+                    ),
+                    
                     tags$hr()
                 )
 
