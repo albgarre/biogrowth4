@@ -341,26 +341,51 @@ module_pred_dynamic_server <- function(id) {
                       "Model type",
                       secondary_model_data()
           ),
-          numericInput(NS(id, paste0(each_name, "_xmin")), "Xmin", 0),
-          conditionalPanel(
+          conditionalPanel(  # xmin
+              ns = NS(id),
+              condition = paste0("input.", each_name, "_model != 'Inhibitory'"),
+              numericInput(NS(id, paste0(each_name, "_xmin")), "Xmin", 0)
+          ),
+          conditionalPanel(  # xopt
             ns = NS(id),
-            condition = paste0("input.", each_name, "_model != 'fullRatkowsky'"),
+            condition = paste0("input.", each_name, "_model == 'CPM'",
+                               " || ", "input.", each_name, "_model == 'Zwietering'"),
+            # condition = paste0("input.", each_name, "_model != 'fullRatkowsky'"),
             numericInput(NS(id, paste0(each_name, "_xopt")), "Xopt", 37)
           ),
-          conditionalPanel(
+          conditionalPanel(  # xmax
             ns = NS(id),
-            condition = paste0("input.", each_name, "_model != 'Zwietering'"),
+            condition = paste0("input.", each_name, "_model == 'CPM'",
+                               " || ", "input.", each_name, "_model == 'fullRatkowsky'"),
+            # condition = paste0("input.", each_name, "_model != 'Zwietering'"),
             numericInput(NS(id, paste0(each_name, "_xmax")), "Xmax", 45),
           ),
-          conditionalPanel(
+          conditionalPanel(  # n
             ns = NS(id),
-            condition = paste0("input.", each_name, "_model != 'fullRatkowsky'"),
+            condition = paste0("input.", each_name, "_model == 'CPM'",
+                               " || ", "input.", each_name, "_model == 'Zwietering'"),
+            # condition = paste0("input.", each_name, "_model != 'fullRatkowsky'"),
             numericInput(NS(id, paste0(each_name, "_n")), "n", 1)
           ),
-          conditionalPanel(
-            ns = NS(id),
-            condition = paste0("input.", each_name, "_model == 'fullRatkowsky'"),
-            numericInput(NS(id, paste0(each_name, "_c")), "c", 1)
+          conditionalPanel(  # c
+              ns = NS(id),
+              condition = paste0("input.", each_name, "_model == 'fullRatkowsky'"),
+              numericInput(NS(id, paste0(each_name, "_c")), "c", 1)
+          ),
+          conditionalPanel(  # xhalf
+              ns = NS(id),
+              condition = paste0("input.", each_name, "_model == 'Aryani'"),
+              numericInput(NS(id, paste0(each_name, "_xhalf")), "xhalf", 1)
+          ),
+          conditionalPanel(  # MIC
+              ns = NS(id),
+              condition = paste0("input.", each_name, "_model == 'Inhibitory'"),
+              numericInput(NS(id, paste0(each_name, "_MIC")), "MIC", 1)
+          ),
+          conditionalPanel(  # alpha
+              ns = NS(id),
+              condition = paste0("input.", each_name, "_model == 'Inhibitory'"),
+              numericInput(NS(id, paste0(each_name, "_alpha")), "alpha", 1)
           ),
           tags$hr()
         )
@@ -410,6 +435,9 @@ module_pred_dynamic_server <- function(id) {
         new_model$xmax <- input[[paste0(factor_name, "_xmax")]]
         new_model$n <- input[[paste0(factor_name, "_n")]]
         new_model$c <- input[[paste0(factor_name, "_c")]]
+        new_model$xhalf <- input[[paste0(factor_name, "_xhalf")]]
+        new_model$MIC <- input[[paste0(factor_name, "_MIC")]]
+        new_model$alpha <- input[[paste0(factor_name, "_alpha")]]
         
         sec_models[[factor_name]] <- new_model
         
