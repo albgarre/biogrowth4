@@ -2,7 +2,6 @@
 library(shiny)
 library(bs4Dash)
 library(tidyverse)
-library(fresh)
 
 library(thematic)
 thematic_shiny()
@@ -93,6 +92,16 @@ ui <- bs4DashPage(
             menuItem(
                 "Gamma",
                 tabName = "fit_gamma",
+                icon = icon("hands-bound")
+            ),
+            menuItem(
+                "Coupled Two-steps",
+                tabName = "coupled_two",
+                icon = icon("hands-bound")
+            ),
+            menuItem(
+                "Coupled One-step",
+                tabName = "coupled_one",
                 icon = icon("hands-bound")
             )
         ),
@@ -188,9 +197,17 @@ ui <- bs4DashPage(
                 module_gamma_fit_ui("module_gamma_fit")
             ),
             tabItem(
-                tabName = "fit_1step",
-                # fit1step_module_ui("module_1step")
+                tabName = "coupled_two",
+                module_coupled_two_fit_ui("module_coupled_two")
             ),
+            tabItem(
+                tabName = "coupled_one",
+                module_coupled_one_fit_ui("module_coupled_one")
+            ),
+            # tabItem(
+            #     tabName = "fit_1step",
+            #     # fit1step_module_ui("module_1step")
+            # ),
             tabItem(
                 tabName = "fit_dyna", 
                 module_dynamic_fit_ui("module_dynamic_fit")
