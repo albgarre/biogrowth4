@@ -327,6 +327,8 @@ module_primary_pred_server <- function(id) {
                 need(growth_curves(), "")
             )
             
+            # browser()
+            
             p <- growth_curves() %>%
                 bind_rows() %>%
                 ggplot() +
